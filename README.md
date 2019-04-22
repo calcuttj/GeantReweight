@@ -1,3 +1,7 @@
+Note: This branch is to store the edits that were made to geant4 (within source) to introduce variations to geant4 and implement them in G4Sim/
+
+
+
 # GeantReweight
 Repository for implementing reweighting in Geant4
 
