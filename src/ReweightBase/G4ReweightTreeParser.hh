@@ -3,8 +3,7 @@
 
 #include "G4ReweightStep.hh"
 #include "G4ReweightTraj.hh"
-#include "G4ReweightInter.hh"
-#include "G4ReweightFinalState.hh"
+#include "G4Reweighter.hh"
 
 #include "G4ReweightParameterMaker.hh"
 #include "G4ReweightThrowManager.hh"
@@ -26,7 +25,6 @@ enum interactionType {
 class G4ReweightTreeParser{
 
   public:
-    //Functions
     G4ReweightTreeParser(std::string, std::string);
 
    ~G4ReweightTreeParser();
@@ -35,22 +33,12 @@ class G4ReweightTreeParser{
     void MakeOutputBranches();
 
     void SetSteps(G4ReweightTraj *);
-    void FillCollection();
 
-    void Analyze(double, double);
-    void Analyze(TH1F *, TH1F *);
-    void AnalyzeFunc(G4ReweightInter *, G4ReweightInter *);
-    void FillAndAnalyze(double, double);
-    void FillAndAnalyze(TH1F *, TH1F *);
-    void FillAndAnalyzeFunc(G4ReweightInter *, G4ReweightInter *);
-
-    void FillAndAnalyzeFS( G4ReweightFinalState * );
+    void FillAndAnalyzeFS( G4Reweighter * );
     void FillAndAnalyzeFSThrows( TFile * FracsFile, TFile * XSecFile, G4ReweightParameterMaker & ParMaker, G4ReweightThrowManager & ThrowMan, size_t nThrows = 10 );
-    void AnalyzeFS( G4ReweightFinalState * );
-    void AnalyzeFSThrows( G4ReweightFinalState *, G4ReweightParameterMaker & ParMaker, std::map< std::string, std::vector<double> > & ThrowVals, size_t nThrows );
-    void GetWeightFS( G4ReweightFinalState *, double );
-    double ReturnWeightFS( G4ReweightFinalState * theFS, double theMomentum, bool IsPiMinus=false );
-
+    void AnalyzeFS( G4Reweighter * );
+    void AnalyzeFSThrows( G4Reweighter *, G4ReweightParameterMaker & ParMaker, std::map< std::string, std::vector<double> > & ThrowVals, size_t nThrows );
+    void ClearCollection();
     void OpenNewInput( std::string );
     void CloseInput();
     void CloseAndSaveOutput(){ fout->cd(); tree->Write(); delete tree; fout->Delete("tree"); fout->Close(); };
@@ -62,6 +50,13 @@ class G4ReweightTreeParser{
     G4ReweightTraj * GetTraj(size_t, size_t);
 
     bool skipEM = true;
+
+    std::vector< std::pair<double,int> > ThinSliceMethod(G4ReweightTraj*,double);
+    std::vector< std::pair<double,int> > ThinSliceBetheBloch(G4ReweightTraj*,double);
+    std::vector< std::pair<double,int> > ThinSliceBetheBlochInelastic(G4ReweightTraj*,double);
+    std::vector< std::pair<double,int> > ThinSliceMethodInelastic(G4ReweightTraj*,double);
+    double BetheBloch(double);
+
 
   private:
     std::string Inel;

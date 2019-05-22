@@ -1,8 +1,7 @@
 #ifndef G4ReweightTraj_h
 #define G4ReweightTraj_h 1
 
-#include "G4ReweightInter.hh"
-#include "G4ReweightFinalState.hh"
+#include "G4Reweighter.hh"
 
 #include <vector>
 #include <string>
@@ -28,7 +27,7 @@ template<class T> class DeleteVector
 //Forward Declaration to let Traj know of step
 class G4ReweightStep;
 
-class G4ReweightFinalState;
+class G4Reweighter;
 
 class G4ReweightTraj{
 
@@ -37,19 +36,20 @@ class G4ReweightTraj{
     G4ReweightTraj(int,int,int,int,std::pair<int,int>);
     ~G4ReweightTraj();
     
-    int trackID;
-    int eventNum;
-    int PID;
-    int parID;
+    int GetTrackID()  {return trackID; };
+    int GetEventNum() {return eventNum; };
+    int GetPDG()      {return PDG; };  
+    int GetParID()    {return parID; };
 
-    std::string fInelastic;
-  
-    double Energy; 
+    std::string GetInelasticType() {return fInelastic;};
 
-    std::pair<int,int> stepRange;
+    double GetEnergy(){return Energy;}; 
+    void SetEnergy( double e ){ Energy = e; };
 
-    G4ReweightTraj * parent;
-    
+    G4ReweightTraj * GetParent(){return parent;};
+
+    std::pair<int,int> GetStepRange(){return stepRange;};
+
     void AddStep(G4ReweightStep *); 
     size_t GetNSteps();
     G4ReweightStep * GetStep(size_t is);
@@ -64,31 +64,9 @@ class G4ReweightTraj{
     
     double GetTotalLength();
 
-    double GetWeight(double bias);
-    double GetWeight_Elast(double elast_bias);
-
-    double GetWeight(TH1F *);
-    double GetWeight_Elast(TH1F *);
-    
-    double GetWeight(TGraph *);
-    double GetWeightFunc(G4ReweightInter *);
-    double GetWeightFunc_Elast(G4ReweightInter *);
-    
-    double GetWeightFS(G4ReweightFinalState *);
-    double GetWeightFS(TGraph *);
 
     int GetNElastic();
-    //Returns a vector of the distances between elastic scatters.
-    //Includes from start to first, then between all subsequent elastic scatters
-    //  Start -> First, First -> Second, Second -> Third, etc.
-    //No info from last elastic scatter to end of the list.
     std::vector<double> GetElastDists();
-
-    std::vector< std::pair<double,int> > ThinSliceMethod(double);
-    std::vector< std::pair<double,int> > ThinSliceBetheBloch(double);
-    std::vector< std::pair<double,int> > ThinSliceBetheBlochInelastic(double);
-    std::vector< std::pair<double,int> > ThinSliceMethodInelastic(double);
-    double BetheBloch(double);
 
     void AddWeight( double w ){
        weights.push_back(w);
@@ -112,6 +90,20 @@ class G4ReweightTraj{
     std::vector<G4ReweightTraj *> children;
 
     std::vector< double > weights;
+
+    std::string fInelastic;
+  
+    int trackID;
+    int eventNum;
+    int PDG;
+    int parID;
+
+    double Energy; 
+
+    std::pair<int,int> stepRange;
+
+    G4ReweightTraj * parent;
+    
 };
 
 

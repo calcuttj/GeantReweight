@@ -1,12 +1,73 @@
 #include "G4ReweightParameterMaker.hh"
 
 G4ReweightParameterMaker::G4ReweightParameterMaker( const std::map< std::string, std::vector< FitParameter > > & pars ) :
-  FullParameterSet( pars ) {
+  FullParameterSet( pars ), nParameters(0) {
 
   BuildHistsFromPars();
 }
 
 G4ReweightParameterMaker::G4ReweightParameterMaker( const std::vector< fhicl::ParameterSet > & FitParSets ){
+
+  std::vector< std::string > all_cuts = {"abs", "cex", "dcex", "prod", "inel", "reac"};
+
+  for( size_t i = 0; i < all_cuts.size(); ++i ){
+    FullParameterSet[ all_cuts[i] ] = std::vector< FitParameter >();
+  }
+
+  for( size_t i = 0; i < FitParSets.size(); ++i ){
+    fhicl::ParameterSet theSet = FitParSets.at(i);
+    std::string theCut = theSet.get< std::string >("Cut");
+
+    if( std::find( all_cuts.begin(), all_cuts.end(), theCut ) == all_cuts.end() ){
+      std::cout << "Error: found parameter with bad cut " << theCut << std::endl;
+      std::exception e;
+      throw e;        
+    }
+
+    ++nParameters;
+
+    std::string theName = theSet.get< std::string >("Name");
+            
+    std::pair< double, double > theRange = theSet.get< std::pair< double, double > >("Range");
+
+    double nominal = theSet.get< double >("Nominal",1.);
+
+    FitParameter par;
+    par.Name = theName;
+    par.Cut = theCut;
+    par.Dummy = false;
+    par.Value = nominal; 
+    par.Range = theRange;
+
+    double scan_start = theSet.get< double >("ScanStart", 1.);
+    int    nsteps =     theSet.get< int >("NScanSteps", 2);
+    double scan_delta = theSet.get< double >("ScanDelta", .1);
+
+    par.ScanStart = scan_start;
+    par.ScanSteps = nsteps;
+    par.ScanDelta = scan_delta;
+
+    ///////Add into the parameters themselves
+    FullParameterSet[ theCut ].push_back( par );
+
+  }
+
+  for( auto itPar = FullParameterSet.begin(); itPar != FullParameterSet.end(); ++itPar){
+    if( !( itPar->second.size() ) ){
+      FitParameter dummyPar;
+
+      dummyPar.Name = "dummy";
+      dummyPar.Cut = itPar->first;
+      dummyPar.Value = 1.; 
+      dummyPar.Range = std::make_pair( 0., 0.);
+      dummyPar.Dummy = true;
+          
+      FullParameterSet[ itPar->first ].push_back( dummyPar );
+    }
+  }
+
+
+/*
 
   for( size_t i = 0; i < FitParSets.size(); ++i ){
     fhicl::ParameterSet theSet = FitParSets.at(i);
@@ -28,18 +89,18 @@ G4ReweightParameterMaker::G4ReweightParameterMaker( const std::vector< fhicl::Pa
       FullParameterSet[ theCut ].push_back( dummyPar );
     }   
     else{ 
-      std::cout << "Making parameters for " << theCut << std::endl;
         
       std::vector< fhicl::ParameterSet > theParameters = theSet.get< std::vector< fhicl::ParameterSet > >("Parameters");
       for( size_t j = 0; j < theParameters.size(); ++j ){
+
+        ++nParameters;
+
         fhicl::ParameterSet thePar = theParameters.at(j);
 
 
         std::string theName = thePar.get< std::string >("Name");
-        std::cout << theName << std::endl;
             
         std::pair< double, double > theRange = thePar.get< std::pair< double, double > >("Range");
-        std::cout << "Range Low: " << theRange.first << " High: " << theRange.second << std::endl;
 
         double nominal = thePar.get< double >("Nominal",1.);
 
@@ -49,11 +110,23 @@ G4ReweightParameterMaker::G4ReweightParameterMaker( const std::vector< fhicl::Pa
         par.Dummy = false;
         par.Value = nominal; 
         par.Range = theRange;
+
+        double scan_start = thePar.get< double >("ScanStart", 1.);
+        int    nsteps =     thePar.get< int >("NScanSteps", 2);
+        double scan_delta = thePar.get< double >("ScanDelta", .1);
+
+        par.ScanStart = scan_start;
+        par.ScanSteps = nsteps;
+        par.ScanDelta = scan_delta;
+
+        ///////Add into the parameters themselves
         FullParameterSet[ theCut ].push_back( par );
 
       }   
     }   
   }
+
+*/
 
   BuildHistsFromPars();
 }
@@ -65,7 +138,6 @@ void G4ReweightParameterMaker::BuildHistsFromPars(){
   for( auto itPar = FullParameterSet.begin(); itPar != FullParameterSet.end(); ++itPar ){
     std::string name = itPar->first;  
     if( name == "reac" ) continue;
-    std::cout << "Cut: " << name << std::endl;
     
     bool isDummy = false;
 
@@ -75,15 +147,11 @@ void G4ReweightParameterMaker::BuildHistsFromPars(){
     for( size_t i = 0; i < itPar->second.size(); ++i ){
       
       if( itPar->second.at( i ).Dummy ){
-        std::cout << "Dummy" << std::endl;
         FSHists[name]  = new TH1D( ("dummy_" + name).c_str(), "", 1,0,0);
-        std::cout << "Made" << std::endl;
         FSHists[name]->SetBinContent(0,1.);
         FSHists[name]->SetBinContent(1,1.);
         FSHists[name]->SetBinContent(2,1.);
-        std::cout << "Dummy N: " << FSHists[name]->GetNbinsX() << std::endl;
         isDummy = true;
-        std::cout << "Set isDummy" << std::endl;
         break;
       }
   
@@ -119,17 +187,10 @@ void G4ReweightParameterMaker::BuildHistsFromPars(){
     CutIsDummy[ name ] = isDummy;
     
     if( !isDummy ){
-      for( size_t i = 0; i < vars.size(); ++i ){
-        std::cout << vars.at(i).first << " " << vars.at(i).second << std::endl;
-      }
 
-      std::cout << "Sizes: " << varX.size() << " " << varY.size() << std::endl;
       FSHists[name] = new TH1D( ("var"+name).c_str(),"", varX.size()-1, &varX[0]);
-      std::cout << "Setting" << std::endl;
       for( size_t i = 0; i < varY.size(); ++i ){
-        std::cout << i << " " << varX[i] << " " << varY[i] << std::endl;
         FSHists[name]->SetBinContent(i+1, varY[i]);
-        std::cout << "Center,Content: " << FSHists[name]->GetBinCenter(i+1) << " " << FSHists[name]->GetBinContent(i+1) << std::endl;
       }
       //Set under/overflow
       FSHists[name]->SetBinContent( 0, 1. );
@@ -147,8 +208,6 @@ void G4ReweightParameterMaker::BuildHistsFromPars(){
       for( size_t i = 0; i < FullParameterSet.at( "reac" ).size(); ++i ){
         double value = FullParameterSet.at( "reac" ).at( i ).Value;
         std::pair< double, double > range = FullParameterSet.at( "reac" ).at( i ).Range;
-        std::cout << i << " Range: " << range.first << " " << range.second << std::endl;
-        std::cout << i << " Value: " << value << std::endl;
 
         bool addDummyBin = false;
         if( reac_bins.size() ){
@@ -170,21 +229,16 @@ void G4ReweightParameterMaker::BuildHistsFromPars(){
 
       }
 
-      std::cout << "Sizes: " << reac_bins.size() << " " << varY.size() << std::endl;
       TH1D reac_hist( "var_reac","", reac_bins.size()-1, &reac_bins[0]);
-      std::cout << "Setting" << std::endl;
       for( size_t i = 0; i < varY.size(); ++i ){
-        std::cout << i << " " << reac_bins[i] << " " << varY[i] << std::endl;
         reac_hist.SetBinContent(i+1, varY[i]);
       }
       //Set under/overflow
       reac_hist.SetBinContent( 0, 1. );
       reac_hist.SetBinContent( reac_hist.GetNbinsX()+1, 1. );      
 
-      std::cout << "reac found. Varying exclusives:" << std::endl;
       for( auto itGr = FSHists.begin(); itGr != FSHists.end(); ++itGr ){
         std::string name = itGr->first;
-        std::cout << name << " " << itGr->second << std::endl;
 
         auto excHist = itGr->second;
         std::vector< double > exc_bins;
@@ -204,9 +258,6 @@ void G4ReweightParameterMaker::BuildHistsFromPars(){
         }
 
         std::sort( new_bins.begin(), new_bins.end() );
-        for( size_t i = 0; i < new_bins.size(); ++i ){
-          std::cout << new_bins[i] << std::endl;
-        }
 
         TH1D new_hist( "new_hist", "", new_bins.size()-1, &new_bins[0] );
         for( int i = 1; i <= new_hist.GetNbinsX(); ++i ){
@@ -214,8 +265,6 @@ void G4ReweightParameterMaker::BuildHistsFromPars(){
           int reac_bin = reac_hist.FindBin( x );
           int exc_bin = excHist->FindBin( x );
 
-          std::cout << i << " " << x << " " << reac_bin << " " << exc_bin << std::endl;
-          std::cout << "\t" << reac_hist.GetBinContent( reac_bin ) << " " << excHist->GetBinContent( exc_bin ) << std::endl;
           double content = reac_hist.GetBinContent( reac_bin );
           content *= excHist->GetBinContent( exc_bin );
 
@@ -230,6 +279,15 @@ void G4ReweightParameterMaker::BuildHistsFromPars(){
 
     }   
   }
+}
+
+void G4ReweightParameterMaker::SetNewVals( const std::vector< std::pair< std::string, double > > & input ){
+  std::map< std::string, double > new_input;
+  for( auto i = input.begin(); i != input.end(); ++i ){
+    new_input[ i->first ] = i->second;
+  }
+
+  SetNewVals( new_input ); 
 }
 
 void G4ReweightParameterMaker::SetNewVals( const std::map< std::string, double > & input ){
