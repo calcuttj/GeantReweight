@@ -22,12 +22,12 @@
 #/gps/ene/type    Mono
 #/gps/ene/mono    100 MeV
 /gps/ene/type    Lin
-/gps/ene/min     100 MeV
-/gps/ene/max     1100 MeV
+/gps/ene/min     300 MeV
+/gps/ene/max     1000 MeV
 /gps/ene/gradient 0  
 /gps/ene/intercept 1
 # Set the initial kinematic and run 3 events
 #
 
-/run/beamOn 10000
+/run/beamOn 250000
 #/run/beamOn 1

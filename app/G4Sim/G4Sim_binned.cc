@@ -2,8 +2,10 @@
 #include "G4UImanager.hh"
 
 #include "G4SimDetectorConstruction.hh"
-#include "G4SimPhysicsList.hh"
+#include "G4SimPhysicsListBinned.hh"
 #include "G4SimActionInitialization.hh"
+
+#include "G4ReweightHist.hh"
 
 #include <utility>
 #include <iostream>
@@ -20,6 +22,7 @@ char * n;
 std::string macFileName = "../G4Sim/run1.mac";
 std::string outFileName = "try.root";
 std::string material_fcl_file = "empty";
+std::string var_fcl_file = "empty";
 
 bool ParseArgs(int argc, char* argv[]);
 
@@ -41,7 +44,33 @@ int main(int argc, char * argv[]){
     runManager->SetUserInitialization(new G4SimDetectorConstruction);
   }
 
-  runManager->SetUserInitialization(new G4SimPhysicsList);
+  if( var_fcl_file == "empty" ){
+    std::cout << "Error. Need a valid fcl file for variations" << std::endl;
+    return 0;
+  }
+  else{
+
+    fhicl::ParameterSet pset = fhicl::make_ParameterSet( var_fcl_file ); 
+    fhicl::ParameterSet inel_bias_par = pset.get< fhicl::ParameterSet >("Inelastic"); 
+    std::vector< double > inel_bins = inel_bias_par.get< std::vector< double > >("Bins");
+    std::vector< double > inel_vals = inel_bias_par.get< std::vector< double > >("Vals");
+
+    G4ReweightHist inelasticBias("inel","inel",inel_bins);
+    for( size_t ib = 0; ib < inel_vals.size(); ++ib ){
+      inelasticBias.SetBinContent( ib, inel_vals[ib] );
+    }
+
+     
+    fhicl::ParameterSet el_bias_par = pset.get< fhicl::ParameterSet >("Elastic"); 
+    std::vector< double > el_bins = el_bias_par.get< std::vector< double > >("Bins");
+    std::vector< double > el_vals = el_bias_par.get< std::vector< double > >("Vals");
+
+    G4ReweightHist elasticBias("el","el",el_bins);
+    for( size_t ib = 0; ib < el_vals.size(); ++ib ){
+      elasticBias.SetBinContent( ib, el_vals[ib] );
+    }
+    runManager->SetUserInitialization(new G4SimPhysicsListBinned( &inelasticBias, &elasticBias ) );
+  }
   
 
   //Define the actions taken during various stages of the run
@@ -80,6 +109,9 @@ bool ParseArgs(int argc, char* argv[]){
     }
     else if( strcmp(argv[i], "-m") == 0){
       material_fcl_file = argv[i+1];
+    }
+    else if( strcmp(argv[i], "-v") == 0){
+      var_fcl_file = argv[i+1];
     }
 
   }

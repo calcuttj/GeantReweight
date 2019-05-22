@@ -1,6 +1,10 @@
 SET(G4SIM_APPS
   G4Sim
   G4Thin
+  G4Sim_bias
+  G4Thin_bias
+  G4Sim_binned
+  G4Thin_binned
 )
 
 if(DEFINED USE_FHICL AND USE_FHICL)

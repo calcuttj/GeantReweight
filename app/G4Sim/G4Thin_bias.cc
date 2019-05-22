@@ -1,8 +1,8 @@
 #include "G4RunManager.hh"
 #include "G4UImanager.hh"
 
-#include "G4SimDetectorConstruction.hh"
-#include "G4SimPhysicsList.hh"
+#include "ThinDetector.hh"
+#include "G4SimPhysicsListBias.hh"
 #include "G4SimActionInitialization.hh"
 
 #include <utility>
@@ -21,6 +21,9 @@ std::string macFileName = "../G4Sim/run1.mac";
 std::string outFileName = "try.root";
 std::string material_fcl_file = "empty";
 
+double inelastic_bias = 1.;
+double elastic_bias = 1.;
+
 bool ParseArgs(int argc, char* argv[]);
 
 int main(int argc, char * argv[]){
@@ -35,13 +38,13 @@ int main(int argc, char * argv[]){
   if( material_fcl_file != "empty" ){
     fhicl::ParameterSet pset = fhicl::make_ParameterSet( material_fcl_file ); 
     fhicl::ParameterSet theMaterial = pset.get< fhicl::ParameterSet >("Material"); 
-    runManager->SetUserInitialization(new G4SimDetectorConstruction(theMaterial) );
+    runManager->SetUserInitialization(new ThinDetector(theMaterial) );
   }
   else{
-    runManager->SetUserInitialization(new G4SimDetectorConstruction);
+    runManager->SetUserInitialization(new ThinDetector);
   }
 
-  runManager->SetUserInitialization(new G4SimPhysicsList);
+  runManager->SetUserInitialization(new G4SimPhysicsListBias( inelastic_bias, elastic_bias ) );
   
 
   //Define the actions taken during various stages of the run
@@ -80,6 +83,12 @@ bool ParseArgs(int argc, char* argv[]){
     }
     else if( strcmp(argv[i], "-m") == 0){
       material_fcl_file = argv[i+1];
+    }
+    else if( strcmp(argv[i], "-i") == 0){
+      inelastic_bias = atof( argv[i+1] );
+    }
+    else if( strcmp(argv[i], "-e") == 0){
+      elastic_bias = atof( argv[i+1] );
     }
 
   }
