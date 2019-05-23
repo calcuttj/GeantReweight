@@ -30,5 +30,5 @@
 #
 
 /run/beamOn 250000
-#/run/beamOn 2500
+#/run/beamOn 25000
 #/run/beamOn 1

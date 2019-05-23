@@ -1,0 +1,11 @@
+Inelastic: {
+
+  Points: [ 0.,   400.,     800.,    1200. ]
+  Vals: [ 1.,   1.50,     0.50,     1.   ]
+
+}
+
+Elastic: {
+  Points: []
+  Vals: []
+}

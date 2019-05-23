@@ -5,6 +5,7 @@ SET(G4SIM_APPS
   G4Thin_bias
   G4Sim_binned
   G4Thin_binned
+  G4Thin_func
 )
 
 if(DEFINED USE_FHICL AND USE_FHICL)
