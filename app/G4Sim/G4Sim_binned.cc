@@ -39,6 +39,8 @@ int main(int argc, char * argv[]){
     fhicl::ParameterSet pset = fhicl::make_ParameterSet( material_fcl_file ); 
     fhicl::ParameterSet theMaterial = pset.get< fhicl::ParameterSet >("Material"); 
     runManager->SetUserInitialization(new G4SimDetectorConstruction(theMaterial) );
+
+    std::cout << "Material: " << theMaterial.get<std::string>("Name") << std::endl;
   }
   else{
     runManager->SetUserInitialization(new G4SimDetectorConstruction);
@@ -48,29 +50,26 @@ int main(int argc, char * argv[]){
     std::cout << "Error. Need a valid fcl file for variations" << std::endl;
     return 0;
   }
-  else{
+  fhicl::ParameterSet pset = fhicl::make_ParameterSet( var_fcl_file ); 
+  fhicl::ParameterSet inel_bias_par = pset.get< fhicl::ParameterSet >("Inelastic"); 
+  std::vector< double > inel_bins = inel_bias_par.get< std::vector< double > >("Bins");
+  std::vector< double > inel_vals = inel_bias_par.get< std::vector< double > >("Vals");
 
-    fhicl::ParameterSet pset = fhicl::make_ParameterSet( var_fcl_file ); 
-    fhicl::ParameterSet inel_bias_par = pset.get< fhicl::ParameterSet >("Inelastic"); 
-    std::vector< double > inel_bins = inel_bias_par.get< std::vector< double > >("Bins");
-    std::vector< double > inel_vals = inel_bias_par.get< std::vector< double > >("Vals");
-
-    G4ReweightHist inelasticBias("inel","inel",inel_bins);
-    for( size_t ib = 0; ib < inel_vals.size(); ++ib ){
-      inelasticBias.SetBinContent( ib, inel_vals[ib] );
-    }
-
-     
-    fhicl::ParameterSet el_bias_par = pset.get< fhicl::ParameterSet >("Elastic"); 
-    std::vector< double > el_bins = el_bias_par.get< std::vector< double > >("Bins");
-    std::vector< double > el_vals = el_bias_par.get< std::vector< double > >("Vals");
-
-    G4ReweightHist elasticBias("el","el",el_bins);
-    for( size_t ib = 0; ib < el_vals.size(); ++ib ){
-      elasticBias.SetBinContent( ib, el_vals[ib] );
-    }
-    runManager->SetUserInitialization(new G4SimPhysicsListBinned( &inelasticBias, &elasticBias ) );
+  G4ReweightHist inelasticBias("inel","inel",inel_bins);
+  for( size_t ib = 0; ib < inel_vals.size(); ++ib ){
+    inelasticBias.SetBinContent( ib, inel_vals[ib] );
   }
+
+   
+  fhicl::ParameterSet el_bias_par = pset.get< fhicl::ParameterSet >("Elastic"); 
+  std::vector< double > el_bins = el_bias_par.get< std::vector< double > >("Bins");
+  std::vector< double > el_vals = el_bias_par.get< std::vector< double > >("Vals");
+
+  G4ReweightHist elasticBias("el","el",el_bins);
+  for( size_t ib = 0; ib < el_vals.size(); ++ib ){
+    elasticBias.SetBinContent( ib, el_vals[ib] );
+  }
+  runManager->SetUserInitialization(new G4SimPhysicsListBinned( &inelasticBias, &elasticBias ) );
   
 
   //Define the actions taken during various stages of the run

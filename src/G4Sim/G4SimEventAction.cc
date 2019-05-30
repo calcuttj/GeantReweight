@@ -18,5 +18,6 @@ void G4SimEventAction::BeginOfEventAction(const G4Event * event){
 
 void G4SimEventAction::EndOfEventAction(const G4Event * event){
 
-  G4cout << "Event: " << event->GetEventID() << G4endl;
+  if ( !( event->GetEventID() % 1000 ) )
+    G4cout << "Event: " << event->GetEventID() << G4endl;
 }
